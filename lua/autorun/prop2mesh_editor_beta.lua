@@ -19,6 +19,6 @@ properties.Add( "prop2mesh_editor_beta", {
     end,
 
     Action = function( self, ent )
-        prop2mesh_editor.open( ent )
+        prop2mesh_editor_beta.open( ent )
     end,
 } )

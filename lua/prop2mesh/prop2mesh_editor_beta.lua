@@ -215,6 +215,7 @@ function PANEL:Setup( ent )
         nodes.controller:DockMargin( 0, 0, 0, 4 )
         nodes.controller:SetLineHeight( 24 )
         nodes.controller.Label:SetFont( editor_fontBold )
+        nodes.controller.underline = true
 
         nodes.settings = nodes.controller:AddNode( "settings", "icon16/cog.png" )
         nodes.settings:SetLineHeight( 24 )
@@ -281,6 +282,7 @@ local PANEL = { lineHeight = 20 }
 
 AccessorFunc( PANEL, "m_bDrawIcons", "DrawIcons", FORCE_BOOL )
 AccessorFunc( PANEL, "m_bDrawLayer", "DrawLayer", FORCE_BOOL )
+AccessorFunc( PANEL, "m_bDrawLayer", "DrawLayer", FORCE_BOOL )
 
 vgui.Register( "prop2mesh_editor_beta_node", PANEL, "DTree_Node" )
 
@@ -297,6 +299,24 @@ function PANEL:GetLineHeight()
     return self.lineHeight or self:GetParentNode():GetLineHeight()
 end
 
+function PANEL:SetHovered( bool )
+    self:GetRoot().HoveredNode = bool and self or nil
+end
+
+function PANEL:IsHoveredNode()
+    return self:GetRoot().HoveredNode == self
+end
+
+local function LabelCursorEntered( self )
+    self.pNode:SetHovered( true )
+    self:InvalidateLayout( true )
+end
+
+local function LabelCursorExited( self )
+    self.pNode:SetHovered( false )
+    self:InvalidateLayout( true )
+end
+
 function PANEL:AddNode( strName, strIcon )
     self:CreateChildNodes()
 
@@ -311,6 +331,9 @@ function PANEL:AddNode( strName, strIcon )
     pNode:SetDrawLayer( true )
     pNode.Label:SetFont( editor_font )
     pNode.Label:SetTextColor( editor_colors.text_norm )
+    pNode.Label.pNode = pNode
+    pNode.Label.OnCursorEntered = LabelCursorEntered
+    pNode.Label.OnCursorExited = LabelCursorExited
 
     if not self.indentLevel then self.indentLevel = 1 end
     pNode.indentLevel = self.indentLevel + 1
@@ -380,7 +403,7 @@ function PANEL:Paint( w, h )
     --     end
     -- end
 
-    if self.Label.Hovered then
+    if self:IsHoveredNode() then
         surface.SetDrawColor( editor_colors.tree_fg )
         surface.DrawRect( 8, 0, w - 8, self:GetLineHeight() )
     end
@@ -392,8 +415,16 @@ function PANEL:Paint( w, h )
         surface.DrawLine( 8, 0, 8, self.m_bLastChild and z or h )
         surface.DrawLine( 8, z, 16, z )
     end
+
+    if self.underline and self:GetExpanded() then
+        surface.SetDrawColor( editor_colors.tree_ln )
+        surface.DrawLine( 0, h - 1, w, h - 1 )
+    end
 end
 
+
+---------------------------------------------------------------
+---------------------------------------------------------------
 function PANEL:DoRightClick()
     if self.prop2mesh_setupModel then
         self:SetupModelNode()
@@ -401,9 +432,6 @@ function PANEL:DoRightClick()
     end
 end
 
-
----------------------------------------------------------------
----------------------------------------------------------------
 local function SetUpdate( self, key, val )
     self.prop2mesh.new[key] = val
 
